@@ -88,8 +88,10 @@ public class CollectionViewItemsController<CollectionType>: NSObject, UICollecti
       }
       collection = items
     }, completion: { [unowned self] _ in
-        if self.reloadsIndicesAfterBatchUpdates {
-            self.collectionView.reloadItems(at: self.collectionView.indexPathsForVisibleItems)
+        if reloadsIndicesAfterBatchUpdates {
+            UIView.performWithoutAnimation {
+                collectionView.reloadItems(at: collectionView.indexPathsForVisibleItems)
+            }
         }
     })
   }

@@ -26,6 +26,9 @@ CollectionType.Element.Element: Hashable {
     /// Should the table updates be animated or static.
     public var animated = true
     
+    /// Reload indices after performing batch updates (Useful when depending on an indexPath.item usage)
+    public var reloadsIndicesAfterBatchUpdates = false
+    
     /// What transitions to use for inserting, updating, and deleting table rows.
     public var rowAnimations = (
         insert: UITableView.RowAnimation.automatic,
@@ -96,18 +99,24 @@ CollectionType.Element.Element: Hashable {
         }
         
         // Commit the changes to the table view sections
-        tableView.beginUpdates()
-        for sectionIndex in 0..<items.count {
-            let rowAtIndex = fromRow(sectionIndex)
-            let changes = delta(newList: items[sectionIndex], oldList: collection[sectionIndex])
-            tableView.deleteRows(at: changes.removals.map(rowAtIndex), with: rowAnimations.delete)
-            tableView.insertRows(at: changes.insertions.map(rowAtIndex), with: rowAnimations.insert)
-            for move in changes.moves {
-                tableView.moveRow(at: rowAtIndex(move.0), to: rowAtIndex(move.1))
+        tableView.performBatchUpdates({ [unowned self] in
+            for sectionIndex in 0..<items.count {
+                let rowAtIndex = fromRow(sectionIndex)
+                let changes = delta(newList: items[sectionIndex], oldList: collection[sectionIndex])
+                tableView.deleteRows(at: changes.removals.map(rowAtIndex), with: rowAnimations.delete)
+                tableView.insertRows(at: changes.insertions.map(rowAtIndex), with: rowAnimations.insert)
+                for move in changes.moves {
+                    tableView.moveRow(at: rowAtIndex(move.0), to: rowAtIndex(move.1))
+                }
             }
-        }
-        collection = items
-        tableView.endUpdates()
+            collection = items
+        }, completion: { [unowned self] _ in
+            if reloadsIndicesAfterBatchUpdates {
+                UIView.performWithoutAnimation {
+                    tableView.reloadRows(at: tableView.indexPathsForVisibleRows ?? [], with: .none)
+                }
+            }
+        })
     }
     
     // MARK: - UITableViewDataSource protocol
