@@ -27,6 +27,9 @@ public class CollectionViewItemsController<CollectionType>: NSObject, UICollecti
   /// Should the table updates be animated or static.
   public var animated = true
   
+  /// Reload indices after performing batch updates (Useful when depending on an indexPath.item usage)
+  public var reloadsIndicesAfterBatchUpdates = false
+    
   /// The collection view for the data source
   var collectionView: UICollectionView!
   
@@ -84,7 +87,11 @@ public class CollectionViewItemsController<CollectionType>: NSObject, UICollecti
         }
       }
       collection = items
-    }, completion: nil)
+    }, completion: { [unowned self] _ in
+        if self.reloadsIndicesAfterBatchUpdates {
+            self.collectionView.reloadItems(at: self.collectionView.indexPathsForVisibleItems)
+        }
+    })
   }
   
   // MARK: - UITableViewDataSource protocol
